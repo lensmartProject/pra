@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>React App – Static Build</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/classnames@2.3.2/dist/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swal2@11"></script>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:20px;background:#f9f9f9;}
+    table{border-collapse:collapse;width:100%;max-width:600px;margin:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left;}
+    th{background:#f0f0f0;}
+    button{padding:4px 8px;background:#007bff;color:#fff;border:none;border-radius:2px;cursor:pointer;}
+    button:hover{background:#0056b3;}
+  </style>
+</head>
+<body>
+  <h1 style="text-align:center">Data Sheet</h1>
+  <div id="root"></div>
+  <script>
+    const {useState, useEffect} = React;
+    function App(){
+      const [data,setData]=useState([]);
+      const [details,setDetails]=useState({});
+      const [loading,setLoading]=useState(true);
+      const [err,setErr]=useState(null);
+
+      useEffect(()=>{
+        fetch('/api/data')
+          .then(r=>{if(!r.ok)throw new Error('Network error');return r.json();})
+          .then(setData)
+          .catch(e=>setErr(e.message))
+          .finally(()=>setLoading(false));
+      },[]);
+
+      const toggle = v=>{
+        const cur=details[v];
+        if(cur){setDetails(s=>({...s,[v]:null}));return;}
+        fetch(`/api/details?value=${encodeURIComponent(v)}`)
+          .then(r=>{if(!r.ok)throw new Error('Error');return r.json();})
+          .then(res=>setDetails(s=>({...s,[v]:res.detail})))
+          .catch(()=>setDetails(s=>({...s,[v]:'Error'})));
+      };
+
+      if(loading) return <p>Loading...</p>;
+      if(err) return <p style="color:red">{err}</p>;
+
+      return <table>
+        <thead><tr><th>#</th><th>Value</th><th>Detail</th><th>Action</th></tr></thead>
+        <tbody>{data.map((v,i)=>(
+          <tr key={i}>
+            <td>{i+1}</td>
+            <td>{v}</td>
+            <td>{details[v]||'N/A'}</td>
+            <td><button onClick={()=>toggle(v)}>{details[v]?'Hide':'Show'} Detail</button></td>
+          </tr>
+        ))}</tbody>
+      </table>;
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>)
+  </script>
+</body>
+</html>
